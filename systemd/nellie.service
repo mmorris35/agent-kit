@@ -1,0 +1,23 @@
+[Unit]
+Description=Nellie — local code memory for Claude Code
+Documentation=https://github.com/mmorris35/nellie
+After=network.target
+
+[Service]
+Type=simple
+# Bound to 127.0.0.1 on purpose: this server is for this machine only.
+ExecStart=__NELLIE_BIN__ serve \
+    --host 127.0.0.1 \
+    --port __PORT__ \
+    --data-dir __DATA_DIR__ \
+    --watch __WATCH_DIR__ \
+    --enable-graph \
+    --enable-structural \
+    --enable-deep-hooks \
+    --sync-interval 30
+Restart=on-failure
+RestartSec=5
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=default.target
