@@ -5,9 +5,11 @@ After=network.target
 
 [Service]
 Type=simple
-# Bound to 127.0.0.1 on purpose: this server is for this machine only.
+# Bind address comes from setup.sh --bind. The default, 127.0.0.1, means this
+# machine only. Anything wider is reachable by whatever can route to it, and
+# Nellie has no authentication of its own.
 ExecStart=__NELLIE_BIN__ serve \
-    --host 127.0.0.1 \
+    --host __BIND__ \
     --port __PORT__ \
     --data-dir __DATA_DIR__ \
     --watch __WATCH_DIR__ \

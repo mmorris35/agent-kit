@@ -2,12 +2,18 @@
 # agent-kit setup — Linux. Stands up Nellie locally and wires it into Claude Code.
 #
 # Safe to re-run: every step checks before it acts.
-# Nothing here talks to anyone else's machine. Nellie binds to 127.0.0.1.
+# Nellie binds to 127.0.0.1 by default, so nothing here is reachable from
+# another machine unless you pass --bind and choose that.
 #
 # Usage:
 #   ./setup.sh                 install and wire everything
 #   ./setup.sh --check         report what is missing, change nothing
-#   ./setup.sh --port 8765     port for the local Nellie server (default 8765)
+#   ./setup.sh --port 8765     port for the Nellie server (default 8765)
+#   ./setup.sh --bind ADDR     address to serve on (default 127.0.0.1, this
+#                              machine only). Use 0.0.0.0 or a LAN/tailnet
+#                              address to share one memory across machines —
+#                              Nellie has no auth of its own, so whoever can
+#                              reach the port can read everything it knows.
 #   ./setup.sh --watch DIR     directory Nellie indexes (default ~/projects)
 #   ./setup.sh --src DIR       where to clone/build Nellie (default ~/src/nellie)
 #   ./setup.sh --no-service    skip the systemd user service
@@ -16,6 +22,7 @@
 set -euo pipefail
 
 PORT=8765
+BIND="127.0.0.1"
 WATCH_DIR="$HOME/projects"
 SRC_DIR="$HOME/src/nellie"
 CHECK_ONLY=false
@@ -28,11 +35,12 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --check) CHECK_ONLY=true; shift ;;
     --port) PORT="${2:?--port needs a value}"; shift 2 ;;
+    --bind) BIND="${2:?--bind needs a value}"; shift 2 ;;
     --watch) WATCH_DIR="${2:?--watch needs a value}"; shift 2 ;;
     --src) SRC_DIR="${2:?--src needs a value}"; shift 2 ;;
     --no-service) NO_SERVICE=true; shift ;;
     --skip-build) SKIP_BUILD=true; shift ;;
-    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
     *) echo "unknown flag: $1 (try --help)" >&2; exit 2 ;;
   esac
 done
@@ -45,7 +53,22 @@ step() { echo; echo "=== $* ==="; }
 
 [[ $EUID -eq 0 ]] && die "run as your normal user, not root (it uses sudo only for apt)"
 
-NELLIE_URL="http://127.0.0.1:${PORT}"
+# Where to reach the server once it is up. A server bound to 0.0.0.0 still
+# answers on loopback; one bound to a specific address only answers there.
+if [[ "$BIND" == "0.0.0.0" || "$BIND" == "127.0.0.1" ]]; then
+  REACH_HOST="127.0.0.1"
+else
+  REACH_HOST="$BIND"
+fi
+NELLIE_URL="http://${REACH_HOST}:${PORT}"
+
+if [[ "$BIND" != "127.0.0.1" ]]; then
+  echo "NOTE: serving on ${BIND}, not just this machine."
+  echo "      Nellie has no authentication. Anything that can reach ${BIND}:${PORT}"
+  echo "      can read every lesson, checkpoint and indexed file it holds."
+  echo "      Put it on a network where that is acceptable, or bind 127.0.0.1."
+  echo
+fi
 
 # ---------------------------------------------------------------- prerequisites
 APT_PACKAGES=(build-essential pkg-config libssl-dev libclang-dev git curl)
@@ -68,6 +91,7 @@ if $CHECK_ONLY; then
   step "Checking prerequisites"
   if check_prereqs; then ok "everything needed is present"; else note "run ./setup.sh to install what is missing"; fi
   echo
+  echo "bind:        $BIND"
   echo "port:        $PORT"
   echo "watch dir:   $WATCH_DIR"
   echo "nellie src:  $SRC_DIR"
@@ -149,12 +173,13 @@ mkdir -p "$WATCH_DIR"
 step "Server"
 if $NO_SERVICE; then
   note "skipping the service. Start Nellie yourself with:"
-  echo "  nellie serve --host 127.0.0.1 --port $PORT --data-dir ~/.local/share/nellie \\"
+  echo "  nellie serve --host $BIND --port $PORT --data-dir ~/.local/share/nellie \\"
   echo "    --watch $WATCH_DIR --enable-graph --enable-structural --enable-deep-hooks --sync-interval 30"
 else
   UNIT_DIR="$HOME/.config/systemd/user"
   mkdir -p "$UNIT_DIR"
   sed -e "s|__NELLIE_BIN__|$BIN_DIR/nellie|g" \
+      -e "s|__BIND__|$BIND|g" \
       -e "s|__PORT__|$PORT|g" \
       -e "s|__DATA_DIR__|$HOME/.local/share/nellie|g" \
       -e "s|__WATCH_DIR__|$WATCH_DIR|g" \

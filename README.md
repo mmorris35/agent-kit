@@ -84,7 +84,8 @@ Idempotent, and every step checks before acting. It will:
 8. verify all of it.
 
 Useful flags: `--port N`, `--watch DIR` (what Nellie indexes, default
-`~/projects`), `--src DIR`, `--no-service`, `--skip-build`.
+`~/projects`), `--bind ADDR` (see below), `--src DIR`, `--no-service`,
+`--skip-build`.
 
 **Check:** the script ends with `[ok] done`. Then, independently:
 
@@ -170,15 +171,28 @@ curl -s http://127.0.0.1:8765/health
 - **Nothing is shared.** Nellie binds to localhost. Your lessons, code index and
   checkpoints stay on your machine. Do not bind it to `0.0.0.0` unless you have
   decided to, and understand who can then reach it.
-- **One server, several machines.** The setup here is deliberately one box:
-  Nellie on `127.0.0.1`, beside the Claude Code that uses it. If you work on
-  several machines and want one memory across them, run `setup.sh` on the
-  machine that will hold it, change the service to bind that machine's LAN
-  address instead of `127.0.0.1`, and on each other machine run only
-  `nellie hooks-install --server http://<that-host>:8765`. Understand what you
-  are choosing: anything that can reach that port can read everything Nellie
-  has learned, and it has no authentication of its own. On a home network that
-  may be fine. Decide it; don't drift into it.
+- **One server, several machines — supported, and a decision.** The default is
+  one box: Nellie on `127.0.0.1`, beside the Claude Code that uses it. If you
+  work across several machines, one shared memory is usually what you want, and
+  it is how this kit's parent setup runs. Install it on the machine that will
+  hold it:
+
+  ```bash
+  ./setup.sh --bind 0.0.0.0            # or a specific LAN / tailnet address
+  ```
+
+  Then on every other machine, install the hooks only, pointing at it:
+
+  ```bash
+  nellie hooks-install --server http://<that-host>:8765
+  ```
+
+  **What it costs:** Nellie has no authentication. Anything that can reach that
+  port reads every lesson, checkpoint and indexed file it holds. A private
+  overlay network (Tailscale or similar) is a reasonable place for it; the open
+  internet is not, and neither is a network with guests on it. `setup.sh` prints
+  this warning when you bind anything other than localhost. Decide it; don't
+  drift into it.
 - **Back up `~/.local/share/nellie`.** Everything Nellie has learned lives
   there — lessons, checkpoints, the index. It is the part of this setup that
   cannot be rebuilt by re-running the installer, and after a few months it is
