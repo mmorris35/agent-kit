@@ -44,6 +44,16 @@ for one project, and they diff and review like code.
 - About 3 GB of disk and 20–40 minutes, most of it a Rust build on first run.
 - Network access to github.com and crates.io.
 
+### Which machine
+
+If there is a choice, pick the box where you already run Claude Code, and
+where your repositories already are. Nellie indexes what it can see, and the
+hooks only help the sessions that run beside them. A VM is fine. What matters:
+
+- Linux with systemd, 2+ cores, 4 GB RAM, ~3 GB free disk.
+- It stays up. A server you shut down each night is a memory that forgets.
+- **Its disk is backed up, or `~/.local/share/nellie` is.** See below.
+
 ## Setup
 
 ### 1. See what is missing
@@ -160,6 +170,13 @@ curl -s http://127.0.0.1:8765/health
 - **Nothing is shared.** Nellie binds to localhost. Your lessons, code index and
   checkpoints stay on your machine. Do not bind it to `0.0.0.0` unless you have
   decided to, and understand who can then reach it.
+- **Back up `~/.local/share/nellie`.** Everything Nellie has learned lives
+  there — lessons, checkpoints, the index. It is the part of this setup that
+  cannot be rebuilt by re-running the installer, and after a few months it is
+  worth more than the machine it sits on. If the host is a VM, confirm it is
+  actually in the backup job rather than assuming it. Keeping each project's
+  `memory/` directory in git covers the other half, because those files leave
+  the box every time you push.
 - **This kit deliberately leaves out** the inter-agent message bus and private
   network used in the setup it was derived from. Neither is needed for one
   person on one machine.
