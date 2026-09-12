@@ -170,6 +170,15 @@ curl -s http://127.0.0.1:8765/health
 - **Nothing is shared.** Nellie binds to localhost. Your lessons, code index and
   checkpoints stay on your machine. Do not bind it to `0.0.0.0` unless you have
   decided to, and understand who can then reach it.
+- **One server, several machines.** The setup here is deliberately one box:
+  Nellie on `127.0.0.1`, beside the Claude Code that uses it. If you work on
+  several machines and want one memory across them, run `setup.sh` on the
+  machine that will hold it, change the service to bind that machine's LAN
+  address instead of `127.0.0.1`, and on each other machine run only
+  `nellie hooks-install --server http://<that-host>:8765`. Understand what you
+  are choosing: anything that can reach that port can read everything Nellie
+  has learned, and it has no authentication of its own. On a home network that
+  may be fine. Decide it; don't drift into it.
 - **Back up `~/.local/share/nellie`.** Everything Nellie has learned lives
   there — lessons, checkpoints, the index. It is the part of this setup that
   cannot be rebuilt by re-running the installer, and after a few months it is
