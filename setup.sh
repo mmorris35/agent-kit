@@ -218,7 +218,7 @@ ok "hooks installed"
 step "Verify"
 nellie hooks-status || note "hooks-status reported a problem"
 echo
-nellie list-lessons 2>/dev/null | head -5 || note "no lessons yet"
+nellie status 2>/dev/null || note "status unavailable"
 echo
 ok "done"
 cat <<EOF

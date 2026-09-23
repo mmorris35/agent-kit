@@ -134,7 +134,7 @@ as what goes into it:
   reason, and indexed in `memory/MEMORY.md`.
 - At the end of a real session, ask for a checkpoint.
 
-**Check:** `nellie list-lessons` grows over the first few days. If it does not,
+**Check:** the `Lessons:` count in `nellie status` grows over the first few days. If it does not,
 memory is not being written, and the setup is decorative.
 
 ## What needs a person
@@ -150,7 +150,8 @@ memory is not being written, and the setup is decorative.
 systemctl --user status nellie      # is it running
 journalctl --user -u nellie -f      # what it is doing
 nellie hooks-status                 # are the hooks wired
-nellie list-lessons                 # what it has learned
+nellie status                       # lesson, checkpoint and index counts
+curl -s http://127.0.0.1:8765/api/v1/lessons   # what it has learned
 curl -s http://127.0.0.1:8765/health
 ```
 
@@ -205,3 +206,7 @@ curl -s http://127.0.0.1:8765/health
   person on one machine.
 - **The behavioural baseline** in `templates/CLAUDE.md` is adapted from Andrej
   Karpathy's CLAUDE.md.
+
+## License
+
+Apache-2.0, the same as Nellie. See `LICENSE`.
