@@ -20,6 +20,9 @@ ExecStart=__NELLIE_BIN__ serve \
 Restart=on-failure
 RestartSec=5
 Environment=RUST_LOG=info
+# A source build does not bundle ONNX Runtime; `nellie setup` downloads it
+# here. Without this the server panics at start ("dlopen failed").
+Environment=ORT_DYLIB_PATH=__DATA_DIR__/lib/libonnxruntime.so
 
 [Install]
 WantedBy=default.target

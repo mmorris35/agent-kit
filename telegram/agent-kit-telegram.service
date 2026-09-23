@@ -1,0 +1,21 @@
+[Unit]
+Description=Claude Code on Telegram (agent-kit)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Claude Code is interactive and needs a terminal; `script` gives it one.
+ExecStart=/usr/bin/script -qec '__LAUNCHER__' /dev/null
+# Stopping or restarting kills the whole process group, including the Telegram
+# server Claude spawned, so no stray poller survives to fight the next start.
+KillMode=control-group
+Restart=always
+RestartSec=10
+Environment=AGENT_KIT_TELEGRAM_WORKSPACE=__WORKSPACE__
+Environment=AGENT_KIT_TELEGRAM_SETTINGS=__SETTINGS__
+Environment=PATH=__PATH__
+WorkingDirectory=__WORKSPACE__
+
+[Install]
+WantedBy=default.target

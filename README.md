@@ -31,6 +31,7 @@ of the optional decisions are still outstanding.
 | **Nellie** | A local server that indexes your code and stores lessons and checkpoints. Semantic search over everything you have worked on. |
 | **Hooks** | Nellie installs Claude Code hooks that load context at session start, save at session end, and add relevant memory to each turn. This is the part that makes sessions feel continuous rather than starting from zero. |
 | **`templates/`** | `CLAUDE.md`, `purpose.md` and a `memory/` folder. Plain files, in your repo, that tell an agent what the project is and what has been learned. |
+| **`telegram/`** (optional) | Runs an agent as a service you message on Telegram. See **Optional: talk to it on Telegram**. |
 
 The two halves matter for different reasons. Nellie is **wide** — it searches
 across everything. The files are **deep** — they carry the reasons and decisions
@@ -136,6 +137,88 @@ as what goes into it:
 
 **Check:** the `Lessons:` count in `nellie status` grows over the first few days. If it does not,
 memory is not being written, and the setup is decorative.
+
+## Optional: talk to it on Telegram
+
+Runs a Claude Code agent as a background service that you message from your
+phone. It uses Anthropic's official Telegram channel plugin. Everything here
+runs on your machine; Telegram carries only the messages.
+
+### If you are an agent setting this up
+
+Do the core **Setup** above first, then run the script below and follow what it
+prints. It is safe to re-run, and it **exits with code 3 and a
+`[PERSON NEEDED]` block** whenever it reaches something only your human can
+do. When that happens, relay the block to them in plain words, wait until they
+say it is done, and run the script again. Walk them through it: most people
+have never met BotFather.
+
+Rules for this part:
+
+- **Never ask for the bot token in chat.** It is a password for the bot. Your
+  human runs `set-token.sh` in their own terminal; it reads the token without
+  showing it and checks it with Telegram.
+- **Pairing codes come from your human in this terminal, never from a Telegram
+  message.** Anyone can message a bot and ask to be let in.
+- Report at the end: the `--check` output, the bot's `@username`, and whether
+  the policy is `allowlist`.
+
+### Steps
+
+**1. Check state.** `./telegram/setup-telegram.sh --check` changes nothing.
+
+**2. Run it.** `./telegram/setup-telegram.sh` (add `--workspace DIR` to choose
+the bot's folder; default `~/projects/telegram-agent`). It installs Bun and the
+plugin, scaffolds the workspace with a Telegram section in its `CLAUDE.md`, and
+installs a launcher and settings. Then it stops for two person steps:
+
+- **Trust the folder, once.** In a terminal: `cd <workspace> && claude`, answer
+  yes to the trust question, `/exit`. A background service cannot answer that
+  question, and would hang on it.
+- **Make the bot.** In Telegram, message
+  [@BotFather](https://t.me/BotFather) with `/newbot`, choose a display name,
+  then a username ending in `bot`. BotFather replies with a token. In a
+  terminal: `./telegram/set-token.sh`, paste, Enter.
+
+**Check:** re-running the script ends with `service running, Telegram server up`.
+
+**3. Pair.** Message your bot on Telegram. It replies with a 6-character code.
+In a Claude Code session in a terminal, type `/telegram:access pair <code>`.
+Then `/telegram:access policy allowlist`, so strangers who find the bot get
+nothing back.
+
+**Check:** message the bot. Claude answers. `--check` shows
+`dmPolicy=allowlist allowed=1`.
+
+### What it installs
+
+| Piece | Where |
+|---|---|
+| Service | `~/.config/systemd/user/agent-kit-telegram.service`, restarts on failure, survives logout |
+| Launcher | `~/.local/bin/agent-kit-telegram-start`, continues the last conversation after a restart, and starts fresh past 8 MB so a huge conversation cannot stall it |
+| Settings | `~/.config/agent-kit/settings.telegram.json` |
+| Bot token | `~/.claude/channels/telegram/.env`, mode 600 |
+| Who may talk to it | `~/.claude/channels/telegram/access.json`, managed by `/telegram:access` |
+
+### Decide this one: permissions
+
+Nobody is at the terminal to approve a tool call, so a prompt would hang the
+bot. The settings file therefore uses `bypassPermissions`: **the agent can run
+anything your user account can**, minus a short deny list (sudo, reboot, reading
+the bot token and `~/.ssh`). The deny list is a speed bump, not a wall: a
+determined agent could reach the same file another way. What protects you is the allowlist: only paired
+Telegram accounts reach it. If that is too much, replace `defaultMode` with an
+explicit `allow` list of the tools you want, and accept that anything outside it
+will hang until you restart the service.
+
+### When it goes wrong
+
+| Symptom | Cause and fix |
+|---|---|
+| Bot never replies, not even a pairing code | `journalctl --user -u agent-kit-telegram -n 50`. Check the service runs and the token is set: `--check`. |
+| Worked, then went silent; logs mention 409 | Two programs are polling the same bot. Only one Claude session may run with `--channels` for a given token. Stop the other. |
+| Replies stop mid-task | The agent wrote an answer but did not call `reply`. The Telegram section of the workspace `CLAUDE.md` covers this; make sure it is still there. |
+| Hangs forever | Something asked a question at the terminal. Restart: `systemctl --user restart agent-kit-telegram`. |
 
 ## What needs a person
 

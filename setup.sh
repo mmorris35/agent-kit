@@ -160,12 +160,15 @@ case ":$PATH:" in
   *) note "add this to your shell profile: export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
 esac
 
-# One-time: downloads the ONNX runtime and embedding model, then starter lessons.
+# One-time: downloads the ONNX runtime and embedding model.
 if [[ ! -d "$HOME/.local/share/nellie/models" ]]; then
   note "downloading embedding model (one time)"
   nellie setup
 fi
 ok "model present"
+ORT_LIB="$HOME/.local/share/nellie/lib/libonnxruntime.so"
+[[ -f "$ORT_LIB" ]] || die "ONNX Runtime missing at $ORT_LIB. Re-run: nellie setup"
+ok "ONNX Runtime present"
 
 mkdir -p "$WATCH_DIR"
 
@@ -173,6 +176,7 @@ mkdir -p "$WATCH_DIR"
 step "Server"
 if $NO_SERVICE; then
   note "skipping the service. Start Nellie yourself with:"
+  echo "  ORT_DYLIB_PATH=~/.local/share/nellie/lib/libonnxruntime.so \\"
   echo "  nellie serve --host $BIND --port $PORT --data-dir ~/.local/share/nellie \\"
   echo "    --watch $WATCH_DIR --enable-graph --enable-structural --enable-deep-hooks --sync-interval 30"
 else
