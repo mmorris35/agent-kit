@@ -106,7 +106,15 @@ part. Say so, and carry on with the actual task.
 
 ## Memory
 
-This project keeps memory in two places, and they do different jobs.
+Three places, and each fact belongs in exactly one:
+
+| What you learned | Where it goes |
+|---|---|
+| About the **person**: preferences, style, their people | `~/wiki/` (remember), if installed |
+| About **this project**: a decision, a constraint, a mistake | `memory/` in this repo |
+| A **gotcha or pattern** another project could hit | a Nellie lesson |
+
+The sections below cover the two that live with this project.
 
 **Nellie (wide).** Semantic search over indexed repositories, plus lessons and
 checkpoints that outlive a session. It is wired in through hooks, so it loads at

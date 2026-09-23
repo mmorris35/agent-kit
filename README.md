@@ -16,7 +16,7 @@ each step, run its check and confirm it passed before moving on. The script is
 safe to re-run; if a step fails, fix the cause and run it again rather than
 skipping ahead.
 
-Three things need your human, listed under **What needs a person**. Ask for
+Four things need your human, listed under **What needs a person**. Ask for
 those rather than guessing. Everything else you can do unattended.
 
 When you are done, report: the health check output, the hook status, and which
@@ -31,11 +31,18 @@ of the optional decisions are still outstanding.
 | **Nellie** | A local server that indexes your code and stores lessons and checkpoints. Semantic search over everything you have worked on. |
 | **Hooks** | Nellie installs Claude Code hooks that load context at session start, save at session end, and add relevant memory to each turn. This is the part that makes sessions feel continuous rather than starting from zero. |
 | **`templates/`** | `CLAUDE.md`, `purpose.md` and a `memory/` folder. Plain files, in your repo, that tell an agent what the project is and what has been learned. |
+| **[remember](https://github.com/mmorris35/remember)** | A `~/wiki/` of plain markdown about *you*: who you are, how you work, your people. Every session in every folder reads it first. Karpathy's LLM-wiki pattern, zero install. |
 | **`telegram/`** (optional) | Runs an agent as a service you message on Telegram. See **Optional: talk to it on Telegram**. |
 
-The two halves matter for different reasons. Nellie is **wide** — it searches
-across everything. The files are **deep** — they carry the reasons and decisions
-for one project, and they diff and review like code.
+Three layers, three jobs:
+
+| Layer | Knows | Lives in |
+|---|---|---|
+| **remember** | **you**: identity, style, preferences, people | `~/wiki/`, loaded in every session |
+| **`memory/`** | **this project**: decisions and reasons, mistakes, open questions | the repo, diffs like code |
+| **Nellie** | **everything, searchable**: code, lessons, checkpoints across projects | a local server, injected by hooks |
+
+remember is **personal**, the files are **deep**, Nellie is **wide**.
 
 ## Requirements
 
@@ -122,7 +129,22 @@ This is the step that decides whether any of it works. An agent with a generic
 
 **Check:** neither file still contains the string `EDIT ME`.
 
-### 5. Use it
+### 5. Teach it who you are: remember
+
+In a Claude Code session, say:
+
+```
+Fetch https://raw.githubusercontent.com/mmorris35/remember/main/README.md and follow the setup instructions
+```
+
+The agent creates `~/wiki/`, appends a Memory System section to
+`~/.claude/CLAUDE.md` (appends, never overwrites), and interviews your human.
+Skip remember's own "What's Next" step: this kit already covers it.
+
+**Check:** `~/wiki/me/profile.md` has real content, and `~/.claude/CLAUDE.md`
+contains `## Memory System`.
+
+### 6. Use it
 
 Start Claude Code in that directory and ask it to read `CLAUDE.md`. From then
 on, the hooks carry memory between sessions by themselves.
@@ -226,6 +248,8 @@ will hang until you restart the service.
 2. **Which directory Nellie watches** — `--watch`, default `~/projects`. It
    should cover the code you actually work on.
 3. **The `EDIT ME` sections** in step 4. Nobody else can write these.
+4. **The remember interview** in step 5: who they are and how they like to
+   be talked to. Answers only they have.
 
 ## Everyday commands
 
